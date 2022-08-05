@@ -43,16 +43,21 @@ var _ = Describe("EventsHandler", func() {
 		handler = *handlers.NewEventStreamHandler(fakeClient, database, logger, stats)
 	})
 
-	AfterEach(func(done Done) {
-		if server != nil {
-			go func() {
-				server.CloseClientConnections()
-				server.Close()
+	AfterEach(func() {
+		done := make(chan interface{})
+		timeout := 5
+		go func() {
+			if server != nil {
+				go func() {
+					server.CloseClientConnections()
+					server.Close()
+					close(done)
+				}()
+			} else {
 				close(done)
-			}()
-		} else {
-			close(done)
-		}
+			}
+		}()
+		Eventually(done, timeout).Should(BeClosed())
 	})
 
 	Describe("EventStream", func() {
